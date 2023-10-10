@@ -58,11 +58,13 @@ import org.eclipse.equinox.log.ExtendedLogReaderService;
 import org.eclipse.equinox.log.ExtendedLogService;
 import org.eclipse.equinox.log.Logger;
 import org.eclipse.osgi.container.ModuleContainer;
+import org.eclipse.osgi.container.ModuleDatabase;
 import org.eclipse.osgi.framework.log.FrameworkLog;
 import org.eclipse.osgi.service.datalocation.Location;
 import org.eclipse.osgi.service.debug.DebugOptions;
 import org.eclipse.osgi.service.environment.EnvironmentInfo;
 import org.eclipse.osgi.service.resolver.PlatformAdmin;
+import org.eclipse.osgi.storage.BundleInfo.Generation;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -468,7 +470,6 @@ public final class InternalPlatform {
 		return platformTracker == null ? null : platformTracker.getService();
 	}
 
-
 	public IPreferencesService getPreferencesService() {
 		return preferencesTracker == null ? null : preferencesTracker.getService();
 	}
@@ -538,8 +539,19 @@ public final class InternalPlatform {
 	}
 
 	public long getStateTimeStamp() {
-		PlatformAdmin admin = getPlatformAdmin();
-		return admin == null ? -1 : admin.getState(false).getTimeStamp();
+		Bundle bundle = FrameworkUtil.getBundle(InternalPlatform.class);
+		org.eclipse.osgi.container.Module module = bundle.adapt(org.eclipse.osgi.container.Module.class);
+		if (module == null) {
+			return 0;
+		}
+		// TODO: Alternatively add a method getRevisionsTimestamp() to ModuleContainer:
+		// public long getRevisionsTimestamp() { return moduleDatabase.getRevisionsTimestamp(); }
+		// ModuleContainer container = module.getContainer();
+		// long revisionsTimestamp = container.getRevisionsTimestamp();
+		Generation fragGeneration = (Generation) module.getCurrentRevision().getRevisionInfo();
+		org.eclipse.osgi.storage.Storage storage = fragGeneration.getBundleInfo().getStorage();
+		ModuleDatabase database = storage.getModuleDatabase();
+		return database.getRevisionsTimestamp();
 	}
 
 	public Location getUserLocation() {
