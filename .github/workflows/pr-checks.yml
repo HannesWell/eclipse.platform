@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-  - cron: '5 0 * * *' # once daily (avoid peek loads at the beginning of the day)
+    - cron: '48 16 * * *' # once daily
 
 jobs:
   check-freeze-period:
@@ -22,3 +22,14 @@ jobs:
     with:
       botName: Eclipse Platform Bot
       botMail: platform-bot@eclipse.org
+  dump-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
