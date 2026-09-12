@@ -40,6 +40,7 @@ import java.util.function.Function;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.internal.filesystem.local.LocalFileNativesManager;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Platform.OS;
@@ -327,6 +328,45 @@ public class SymlinkTest {
 		}
 		assertNull(out);
 		assertTrue(exceptionThrown);
+	}
+
+	@Test
+	public void testPosixHandlerDirectoryListingOnBrokenSymlinks() throws Exception {
+		assumeFalse(Platform.OS_WIN32.equals(Platform.getOS()), "only relevant for POSIX file systems");
+
+		IFileStore baseStore = fileStoreExtension.getFileStore();
+		makeLinkStructure();
+		ensureDoesNotExist(aFile);
+		ensureDoesNotExist(aDir);
+
+		try {
+			LocalFileNativesManager.setUsingNative(true, false);
+			String basePath = baseStore.toLocalFile(EFS.NONE, getMonitor()).getAbsolutePath();
+
+			String[] names = LocalFileNativesManager.listDirectoryNames(basePath);
+			assertThat(names).containsExactlyInAnyOrder("lDir", "llDir", "lFile", "llFile");
+
+			IFileInfo[] infos = LocalFileNativesManager.listDirectoryAndGetFileInfos(basePath);
+			assertThat(infos).hasSize(4).allSatisfy(info -> {
+				assertTrue(info.getAttribute(EFS.ATTRIBUTE_SYMLINK));
+				assertFalse(info.exists());
+			});
+			assertThat(infos).anySatisfy(info -> {
+				assertEquals("lFile", info.getName());
+				assertEquals("aFile", info.getStringAttribute(EFS.ATTRIBUTE_LINK_TARGET));
+			}).anySatisfy(info -> {
+				assertEquals("llFile", info.getName());
+				assertEquals("lFile", info.getStringAttribute(EFS.ATTRIBUTE_LINK_TARGET));
+			}).anySatisfy(info -> {
+				assertEquals("lDir", info.getName());
+				assertEquals("aDir", info.getStringAttribute(EFS.ATTRIBUTE_LINK_TARGET));
+			}).anySatisfy(info -> {
+				assertEquals("llDir", info.getName());
+				assertEquals("lDir", info.getStringAttribute(EFS.ATTRIBUTE_LINK_TARGET));
+			});
+		} finally {
+			LocalFileNativesManager.reset();
+		}
 	}
 
 	@Test

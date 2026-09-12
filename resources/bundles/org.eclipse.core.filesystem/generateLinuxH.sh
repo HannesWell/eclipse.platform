@@ -60,6 +60,7 @@ EOF
 	--include-constant S_IXOTH \
 	--target-package "${TARGET_PACKAGE}" \
 	--header-class-name LinuxDirent \
+	--library c \
 	--include-dir /usr/include \
 	--include-dir "/usr/include/${MULTIARCH}" \
 	"${HEADER_FILE}"
