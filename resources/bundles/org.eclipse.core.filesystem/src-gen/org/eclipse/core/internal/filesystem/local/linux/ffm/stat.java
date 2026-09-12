@@ -16,13 +16,21 @@ public class stat {
 	}
 
 	private static final GroupLayout $LAYOUT = MemoryLayout.structLayout( //
-			MemoryLayout.paddingLayout(24 * 8L), //
+			LinuxDirent.C_LONG.withName("st_dev"), //$NON-NLS-1$
+			LinuxDirent.C_LONG.withName("st_ino"), //$NON-NLS-1$
+			LinuxDirent.C_LONG.withName("st_nlink"), //$NON-NLS-1$
 			LinuxDirent.C_INT.withName("st_mode"), //$NON-NLS-1$
-			MemoryLayout.paddingLayout(20 * 8L), //
+			LinuxDirent.C_INT.withName("st_uid"), //$NON-NLS-1$
+			LinuxDirent.C_INT.withName("st_gid"), //$NON-NLS-1$
+			LinuxDirent.C_INT.withName("__pad0"), //$NON-NLS-1$
+			LinuxDirent.C_LONG.withName("st_rdev"), //$NON-NLS-1$
 			LinuxDirent.C_LONG.withName("st_size"), //$NON-NLS-1$
-			MemoryLayout.paddingLayout(32 * 8L), //
+			LinuxDirent.C_LONG.withName("st_blksize"), //$NON-NLS-1$
+			LinuxDirent.C_LONG.withName("st_blocks"), //$NON-NLS-1$
+			timespec.layout().withName("st_atim"), //$NON-NLS-1$
 			timespec.layout().withName("st_mtim"), //$NON-NLS-1$
-			MemoryLayout.paddingLayout(40 * 8L)) //
+			timespec.layout().withName("st_ctim"), //$NON-NLS-1$
+			MemoryLayout.sequenceLayout(3, LinuxDirent.C_LONG).withName("__glibc_reserved")) //$NON-NLS-1$
 			.withByteAlignment(8) //
 			.withName("stat"); //$NON-NLS-1$
 
