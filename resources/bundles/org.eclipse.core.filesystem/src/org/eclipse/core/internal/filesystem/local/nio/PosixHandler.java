@@ -263,8 +263,8 @@ public class PosixHandler extends NativeHandler {
 				info.setStringAttribute(EFS.ATTRIBUTE_LINK_TARGET, Convert.fromPlatformBytes(linkTarget, linkTarget.length));
 			}
 		}
-		setIfUnset(info, EFS.ATTRIBUTE_OWNER_READ, (stat.st_mode(statBuffer) & LinuxDirent.S_IRUSR()) == 0);
-		setIfUnset(info, EFS.ATTRIBUTE_OWNER_WRITE, (stat.st_mode(statBuffer) & LinuxDirent.S_IWUSR()) == 0);
+		info.setAttribute(EFS.ATTRIBUTE_OWNER_READ, (stat.st_mode(statBuffer) & LinuxDirent.S_IRUSR()) != 0);
+		info.setAttribute(EFS.ATTRIBUTE_OWNER_WRITE, (stat.st_mode(statBuffer) & LinuxDirent.S_IWUSR()) != 0);
 		setIfSet(info, EFS.ATTRIBUTE_OWNER_EXECUTE, (stat.st_mode(statBuffer) & LinuxDirent.S_IXUSR()) != 0);
 		setIfSet(info, EFS.ATTRIBUTE_GROUP_READ, (stat.st_mode(statBuffer) & LinuxDirent.S_IRGRP()) != 0);
 		setIfSet(info, EFS.ATTRIBUTE_GROUP_WRITE, (stat.st_mode(statBuffer) & LinuxDirent.S_IWGRP()) != 0);
@@ -278,12 +278,6 @@ public class PosixHandler extends NativeHandler {
 	private static void setIfSet(FileInfo info, int attribute, boolean value) {
 		if (value) {
 			info.setAttribute(attribute, true);
-		}
-	}
-
-	private static void setIfUnset(FileInfo info, int attribute, boolean unset) {
-		if (unset) {
-			info.setAttribute(attribute, false);
 		}
 	}
 
