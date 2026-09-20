@@ -47,9 +47,12 @@ public class MacOSHandler extends NativeHandler {
 	@Override
 	public boolean putFileInfo(String fileName, IFileInfo info, int options) {
 		Path path = Path.of(fileName);
-		boolean immutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
 		try {
 			int currentFlags = MacFileFlags.read(path);
+			boolean immutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
+			if (!immutable && MacFileFlags.isImmutable(currentFlags) && info.getAttribute(EFS.ATTRIBUTE_READ_ONLY)) {
+				immutable = true;
+			}
 			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
 			if (!immutable && MacFileFlags.isImmutable(desiredFlags)) {
 				return false;
@@ -65,7 +68,18 @@ public class MacOSHandler extends NativeHandler {
 				return false;
 			}
 			if (desiredFlags != writableFlags) {
-				MacFileFlags.write(path, desiredFlags);
+				try {
+					MacFileFlags.write(path, desiredFlags);
+				} catch (IOException e) {
+					if (writableFlags != currentFlags) {
+						try {
+							MacFileFlags.write(path, currentFlags);
+						} catch (IOException suppressed) {
+							e.addSuppressed(suppressed);
+						}
+					}
+					return false;
+				}
 			}
 			return true;
 		} catch (IOException e) {
