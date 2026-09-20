@@ -24,7 +24,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.eclipse.core.internal.filesystem.local.Convert;
-import org.eclipse.core.runtime.Platform;
 
 final class MacFileFlags {
 	static final int UF_IMMUTABLE = 0x00000002;
@@ -34,9 +33,6 @@ final class MacFileFlags {
 	private static final int ENOTDIR = 20;
 	private static final long UINT_MASK = 0xffff_ffffL;
 	private static final Linker NATIVE_LINKER = Linker.nativeLinker();
-
-	private static final boolean SUPPORTED_ARCH = Platform.ARCH_X86_64.equals(Platform.getOSArch())
-			|| Platform.ARCH_AARCH64.equals(Platform.getOSArch());
 
 	private static final StructLayout TIMESPEC_LAYOUT = MemoryLayout
 			.structLayout(ValueLayout.JAVA_LONG.withName("tv_sec"), ValueLayout.JAVA_LONG.withName("tv_nsec")) //$NON-NLS-1$ //$NON-NLS-2$
@@ -82,7 +78,7 @@ final class MacFileFlags {
 	}
 
 	static boolean isSupported() {
-		return SUPPORTED_ARCH && LSTAT_HANDLE != null && CHFLAGS_HANDLE != null;
+		return LSTAT_HANDLE != null && CHFLAGS_HANDLE != null;
 	}
 
 	static boolean isImmutable(int flags) {
