@@ -53,9 +53,11 @@ public class MacOSHandler extends NativeHandler {
 		try {
 			FileInfo currentInfo = posixHandler.fetchFileInfo(fileName);
 			int currentFlags = MacFileFlags.read(path);
-			boolean immutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
-			if (!immutable && MacFileFlags.isImmutable(currentFlags) && info.getAttribute(EFS.ATTRIBUTE_READ_ONLY)) {
-				immutable = true;
+			boolean immutable = MacFileFlags.isImmutable(currentFlags);
+			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY) || immutable;
+			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
+			if (requestedReadOnly != currentReadOnly) {
+				immutable = requestedReadOnly;
 			}
 			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
 			if (!immutable && MacFileFlags.isImmutable(desiredFlags)) {
