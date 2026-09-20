@@ -46,6 +46,9 @@ public class MacOSHandler extends NativeHandler {
 
 	@Override
 	public boolean putFileInfo(String fileName, IFileInfo info, int options) {
+		if ((options & EFS.SET_ATTRIBUTES) == 0) {
+			return true;
+		}
 		Path path = Path.of(fileName);
 		try {
 			int currentFlags = MacFileFlags.read(path);

@@ -19,6 +19,7 @@ import static org.eclipse.core.tests.resources.ResourceTestPluginConstants.PI_RE
 import static org.eclipse.core.tests.resources.ResourceTestUtil.createInFileSystem;
 import static org.eclipse.core.tests.resources.ResourceTestUtil.createTestMonitor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,6 +80,7 @@ public class TestBug323833 {
 		if (!OS.isMac()) {
 			return;
 		}
+		assumeTrue((EFS.getLocalFileSystem().attributes() & EFS.ATTRIBUTE_IMMUTABLE) != 0);
 
 		IPath workspaceRootLocation = getWorkspace().getRoot().getLocation();
 		IFileStore fileStore = EFS.getLocalFileSystem().getStore(workspaceRootLocation).getChild(filename);
