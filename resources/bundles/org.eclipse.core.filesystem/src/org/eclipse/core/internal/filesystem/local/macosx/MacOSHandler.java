@@ -24,10 +24,6 @@ import org.eclipse.core.internal.filesystem.local.nio.PosixHandler;
  * to round-trip through {@link EFS#ATTRIBUTE_IMMUTABLE} on supported macOS systems.
  */
 public class MacOSHandler extends NativeHandler {
-	private static final int[] POSIX_PERMISSION_ATTRIBUTES = { EFS.ATTRIBUTE_OWNER_READ, EFS.ATTRIBUTE_OWNER_WRITE,
-			EFS.ATTRIBUTE_OWNER_EXECUTE, EFS.ATTRIBUTE_GROUP_READ, EFS.ATTRIBUTE_GROUP_WRITE, EFS.ATTRIBUTE_GROUP_EXECUTE,
-			EFS.ATTRIBUTE_OTHER_READ, EFS.ATTRIBUTE_OTHER_WRITE, EFS.ATTRIBUTE_OTHER_EXECUTE };
-
 	private final PosixHandler posixHandler = new PosixHandler();
 
 	public static boolean isSupported() {
@@ -67,11 +63,12 @@ public class MacOSHandler extends NativeHandler {
 			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
-			boolean posixPermissionsChanged = hasPosixPermissionChanges(currentInfo, info);
 			boolean immutableChanged = requestedImmutable != currentImmutable;
 			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
-			if (immutableChanged && (!posixPermissionsChanged || readOnlyChanged)) {
+			if (immutableChanged) {
 				immutable = requestedImmutable;
+			} else if (readOnlyChanged) {
+				immutable = requestedReadOnly;
 			}
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
 			if (MacFileFlags.hasUserImmutable(currentFlags)) {
@@ -113,12 +110,4 @@ public class MacOSHandler extends NativeHandler {
 		}
 	}
 
-	private static boolean hasPosixPermissionChanges(IFileInfo currentInfo, IFileInfo requestedInfo) {
-		for (int attribute : POSIX_PERMISSION_ATTRIBUTES) {
-			if (currentInfo.getAttribute(attribute) != requestedInfo.getAttribute(attribute)) {
-				return true;
-			}
-		}
-		return false;
-	}
 }
