@@ -24,6 +24,10 @@ import org.eclipse.core.internal.filesystem.local.nio.PosixHandler;
  * to round-trip through {@link EFS#ATTRIBUTE_IMMUTABLE} on supported macOS systems.
  */
 public class MacOSHandler extends NativeHandler {
+	private static final int[] POSIX_PERMISSION_ATTRIBUTES = { EFS.ATTRIBUTE_OWNER_READ, EFS.ATTRIBUTE_OWNER_WRITE,
+			EFS.ATTRIBUTE_OWNER_EXECUTE, EFS.ATTRIBUTE_GROUP_READ, EFS.ATTRIBUTE_GROUP_WRITE, EFS.ATTRIBUTE_GROUP_EXECUTE,
+			EFS.ATTRIBUTE_OTHER_READ, EFS.ATTRIBUTE_OTHER_WRITE, EFS.ATTRIBUTE_OTHER_EXECUTE };
+
 	private final PosixHandler posixHandler = new PosixHandler();
 
 	public static boolean isSupported() {
@@ -60,13 +64,14 @@ public class MacOSHandler extends NativeHandler {
 			int currentFlags = MacFileFlags.read(path);
 			boolean currentImmutable = MacFileFlags.isImmutable(currentFlags);
 			boolean immutable = currentImmutable;
-			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY) || immutable;
+			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
 			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
+			boolean posixPermissionsChanged = hasPosixPermissionChanges(currentInfo, info);
 			if (readOnlyChanged) {
 				immutable = requestedReadOnly;
-			} else if (requestedImmutable != currentImmutable) {
+			} else if (!posixPermissionsChanged && requestedImmutable != currentImmutable) {
 				immutable = requestedImmutable;
 			}
 			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
@@ -105,6 +110,15 @@ public class MacOSHandler extends NativeHandler {
 			} catch (IOException suppressed) {
 				failure.addSuppressed(suppressed);
 			}
+		}
+
+		private static boolean hasPosixPermissionChanges(IFileInfo currentInfo, IFileInfo requestedInfo) {
+			for (int attribute : POSIX_PERMISSION_ATTRIBUTES) {
+				if (currentInfo.getAttribute(attribute) != requestedInfo.getAttribute(attribute)) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }
