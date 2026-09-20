@@ -41,6 +41,7 @@ public class Bug_329836 {
 	@Test
 	public void testBug(@TempDir Path tempDirectory) throws Exception {
 		assumeTrue(OS.isMac(), "only relevant on Mac");
+		assumeTrue(isAttributeSupported(EFS.ATTRIBUTE_IMMUTABLE), "Mac local file system should support immutable");
 
 		IFileStore fileStore = getFileStore(tempDirectory).getChild(createUniqueString());
 		createInFileSystem(fileStore);
@@ -55,9 +56,7 @@ public class Bug_329836 {
 
 		// check that attributes are really set
 		assertThat(info).matches(it -> it.getAttribute(EFS.ATTRIBUTE_READ_ONLY), "is read only");
-		if (isAttributeSupported(EFS.ATTRIBUTE_IMMUTABLE)) {
-			assertThat(info).matches(it -> it.getAttribute(EFS.ATTRIBUTE_IMMUTABLE), "is immutable");
-		}
+		assertThat(info).matches(it -> it.getAttribute(EFS.ATTRIBUTE_IMMUTABLE), "is immutable");
 
 		// unset EFS.ATTRIBUTE_READ_ONLY which also unsets EFS.IMMUTABLE on Mac
 
@@ -69,9 +68,7 @@ public class Bug_329836 {
 
 		// check that attributes are really unset
 		assertThat(info).matches(it -> !it.getAttribute(EFS.ATTRIBUTE_READ_ONLY), "is not read only");
-		if (isAttributeSupported(EFS.ATTRIBUTE_IMMUTABLE)) {
-			assertThat(info).matches(it -> !it.getAttribute(EFS.ATTRIBUTE_IMMUTABLE), "is not immutable");
-		}
+		assertThat(info).matches(it -> !it.getAttribute(EFS.ATTRIBUTE_IMMUTABLE), "is not immutable");
 	}
 
 }
