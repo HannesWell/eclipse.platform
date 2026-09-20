@@ -18,6 +18,11 @@ import org.eclipse.core.filesystem.provider.FileInfo;
 import org.eclipse.core.internal.filesystem.local.NativeHandler;
 import org.eclipse.core.internal.filesystem.local.nio.PosixHandler;
 
+/**
+ * macOS handler that keeps ordinary POSIX permission handling in {@link PosixHandler}
+ * and adds BSD immutable-flag support so {@link EFS#ATTRIBUTE_READ_ONLY} continues
+ * to round-trip through {@link EFS#ATTRIBUTE_IMMUTABLE} on supported macOS systems.
+ */
 public class MacOSHandler extends NativeHandler {
 	private final PosixHandler posixHandler = new PosixHandler();
 
@@ -56,11 +61,12 @@ public class MacOSHandler extends NativeHandler {
 			boolean immutable = MacFileFlags.isImmutable(currentFlags);
 			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY) || immutable;
 			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
-			if (requestedReadOnly != currentReadOnly) {
+			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
+			if (readOnlyChanged) {
 				immutable = requestedReadOnly;
 			}
 			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
-			if (!immutable && MacFileFlags.isImmutable(desiredFlags)) {
+			if (readOnlyChanged && !immutable && MacFileFlags.isImmutable(desiredFlags)) {
 				return false;
 			}
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);

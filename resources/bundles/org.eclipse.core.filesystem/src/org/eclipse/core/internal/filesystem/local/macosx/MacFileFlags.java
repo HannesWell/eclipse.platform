@@ -36,14 +36,37 @@ final class MacFileFlags {
 	private static final boolean SUPPORTED_ARCH = Platform.ARCH_X86_64.equals(Platform.getOSArch())
 			|| Platform.ARCH_AARCH64.equals(Platform.getOSArch());
 
+	private static final StructLayout TIMESPEC_LAYOUT = MemoryLayout
+			.structLayout(ValueLayout.JAVA_LONG.withName("tv_sec"), ValueLayout.JAVA_LONG.withName("tv_nsec")) //$NON-NLS-1$ //$NON-NLS-2$
+			.withByteAlignment(Long.BYTES);
 	/*
-	 * macOS uses the LP64 Darwin struct stat layout for both x86_64 and aarch64:
-	 * dev_t(4), mode_t(2), nlink_t(2), ino64_t(8), uid_t(4), gid_t(4), dev_t(4),
-	 * pad(4), 4x timespec(16), off_t(8), blkcnt_t(8), blksize_t(4), st_flags(4),
-	 * st_gen(4), st_lspare(4), st_qspare[2](16).
+	 * macOS uses the same LP64 Darwin struct stat layout for both x86_64 and aarch64.
+	 * Expressing the layout explicitly keeps the ABI-critical size and st_flags offset
+	 * derived from the field layout instead of duplicated magic numbers.
 	 */
-	private static final long STAT_SIZE = 144;
-	private static final long ST_FLAGS_OFFSET = 116;
+	private static final StructLayout STAT_LAYOUT = MemoryLayout.structLayout(
+			ValueLayout.JAVA_INT.withName("st_dev"), //$NON-NLS-1$
+			ValueLayout.JAVA_SHORT.withName("st_mode"), //$NON-NLS-1$
+			ValueLayout.JAVA_SHORT.withName("st_nlink"), //$NON-NLS-1$
+			ValueLayout.JAVA_LONG.withName("st_ino"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_uid"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_gid"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_rdev"), //$NON-NLS-1$
+			MemoryLayout.paddingLayout(Integer.BYTES * Byte.SIZE),
+			TIMESPEC_LAYOUT.withName("st_atimespec"), //$NON-NLS-1$
+			TIMESPEC_LAYOUT.withName("st_mtimespec"), //$NON-NLS-1$
+			TIMESPEC_LAYOUT.withName("st_ctimespec"), //$NON-NLS-1$
+			TIMESPEC_LAYOUT.withName("st_birthtimespec"), //$NON-NLS-1$
+			ValueLayout.JAVA_LONG.withName("st_size"), //$NON-NLS-1$
+			ValueLayout.JAVA_LONG.withName("st_blocks"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_blksize"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_flags"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_gen"), //$NON-NLS-1$
+			ValueLayout.JAVA_INT.withName("st_lspare"), //$NON-NLS-1$
+			MemoryLayout.sequenceLayout(2, ValueLayout.JAVA_LONG).withName("st_qspare")) //$NON-NLS-1$
+			.withByteAlignment(Long.BYTES);
+	private static final long STAT_SIZE = STAT_LAYOUT.byteSize();
+	private static final long ST_FLAGS_OFFSET = STAT_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("st_flags")); //$NON-NLS-1$
 
 	private static final StructLayout ERRNO_CAPTURE_LAYOUT = Linker.Option.captureStateLayout();
 	private static final VarHandle ERRNO = ERRNO_CAPTURE_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("errno")); //$NON-NLS-1$
