@@ -67,14 +67,12 @@ public class MacOSHandler extends NativeHandler {
 			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
-			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
 			boolean posixPermissionsChanged = hasPosixPermissionChanges(currentInfo, info);
-			if (readOnlyChanged) {
-				immutable = requestedReadOnly;
-			} else if (!posixPermissionsChanged && requestedImmutable != currentImmutable) {
+			boolean immutableChanged = requestedImmutable != currentImmutable;
+			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
+			if (immutableChanged && (!posixPermissionsChanged || readOnlyChanged)) {
 				immutable = requestedImmutable;
 			}
-			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
 			if (MacFileFlags.hasUserImmutable(currentFlags)) {
 				MacFileFlags.write(path, writableFlags);
@@ -85,7 +83,9 @@ public class MacOSHandler extends NativeHandler {
 				}
 				return false;
 			}
-			if (desiredFlags != writableFlags) {
+			int updatedFlags = MacFileFlags.read(path);
+			int desiredFlags = MacFileFlags.withUserImmutable(updatedFlags, immutable);
+			if (desiredFlags != updatedFlags) {
 				try {
 					MacFileFlags.write(path, desiredFlags);
 				} catch (IOException e) {
