@@ -50,6 +50,10 @@ public class MacOSHandler extends NativeHandler {
 		boolean immutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
 		try {
 			int currentFlags = MacFileFlags.read(path);
+			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
+			if (!immutable && MacFileFlags.isImmutable(desiredFlags)) {
+				return false;
+			}
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
 			if (MacFileFlags.hasUserImmutable(currentFlags)) {
 				MacFileFlags.write(path, writableFlags);
@@ -60,7 +64,6 @@ public class MacOSHandler extends NativeHandler {
 				}
 				return false;
 			}
-			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
 			if (desiredFlags != writableFlags) {
 				MacFileFlags.write(path, desiredFlags);
 			}
