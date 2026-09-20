@@ -80,20 +80,35 @@ public class MacOSHandler extends NativeHandler {
 				try {
 					MacFileFlags.write(path, desiredFlags);
 				} catch (IOException e) {
-					posixHandler.putFileInfo(fileName, currentInfo, options);
-					if (writableFlags != currentFlags) {
-						try {
-							MacFileFlags.write(path, currentFlags);
-						} catch (IOException suppressed) {
-							e.addSuppressed(suppressed);
-						}
-					}
+					rollback(path, fileName, currentInfo, options, currentFlags, writableFlags, e);
 					return false;
 				}
 			}
 			return true;
 		} catch (IOException e) {
 			return false;
+		}
+	}
+
+	private void rollback(Path path, String fileName, FileInfo currentInfo, int options, int currentFlags, int writableFlags,
+			IOException failure) {
+		if (writableFlags != currentFlags) {
+			try {
+				MacFileFlags.write(path, currentFlags);
+				MacFileFlags.write(path, writableFlags);
+			} catch (IOException suppressed) {
+				failure.addSuppressed(suppressed);
+			}
+		}
+		if (!posixHandler.putFileInfo(fileName, currentInfo, options)) {
+			failure.addSuppressed(new IOException("Failed to restore POSIX attributes")); //$NON-NLS-1$
+		}
+		if (writableFlags != currentFlags) {
+			try {
+				MacFileFlags.write(path, currentFlags);
+			} catch (IOException suppressed) {
+				failure.addSuppressed(suppressed);
+			}
 		}
 	}
 }

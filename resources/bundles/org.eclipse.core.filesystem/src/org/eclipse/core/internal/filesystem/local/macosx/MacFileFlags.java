@@ -33,6 +33,7 @@ final class MacFileFlags {
 	private static final int ENOENT = 2;
 	private static final int ENOTDIR = 20;
 	private static final long UINT_MASK = 0xffff_ffffL;
+	private static final Linker NATIVE_LINKER = Linker.nativeLinker();
 
 	private static final boolean SUPPORTED_ARCH = Platform.ARCH_X86_64.equals(Platform.getOSArch())
 			|| Platform.ARCH_AARCH64.equals(Platform.getOSArch());
@@ -119,8 +120,8 @@ final class MacFileFlags {
 	}
 
 	private static MethodHandle downcall(String symbol, FunctionDescriptor descriptor) {
-		return Linker.nativeLinker().defaultLookup().find(symbol)
-				.map(address -> Linker.nativeLinker().downcallHandle(address, descriptor, Linker.Option.captureCallState("errno"))) //$NON-NLS-1$
+		return NATIVE_LINKER.defaultLookup().find(symbol)
+				.map(address -> NATIVE_LINKER.downcallHandle(address, descriptor, Linker.Option.captureCallState("errno"))) //$NON-NLS-1$
 				.orElse(null);
 	}
 
