@@ -44,11 +44,6 @@ final class MacFileFlags {
 	 */
 	private static final long STAT_SIZE = 144;
 	private static final long ST_FLAGS_OFFSET = 116;
-	private static final StructLayout STAT_LAYOUT = MemoryLayout.structLayout(
-			MemoryLayout.paddingLayout(ST_FLAGS_OFFSET * Byte.SIZE), ValueLayout.JAVA_INT.withName("st_flags"), //$NON-NLS-1$
-			MemoryLayout.paddingLayout((STAT_SIZE - ST_FLAGS_OFFSET - Integer.BYTES) * Byte.SIZE)).withByteAlignment(Long.BYTES);
-	private static final VarHandle ST_FLAGS = STAT_LAYOUT
-			.varHandle(MemoryLayout.PathElement.groupElement("st_flags")); //$NON-NLS-1$
 
 	private static final StructLayout ERRNO_CAPTURE_LAYOUT = Linker.Option.captureStateLayout();
 	private static final VarHandle ERRNO = ERRNO_CAPTURE_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("errno")); //$NON-NLS-1$
@@ -81,11 +76,11 @@ final class MacFileFlags {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment capturedErrno = arena.allocate(ERRNO_CAPTURE_LAYOUT);
 			MemorySegment nativePath = allocatePath(path, arena);
-			MemorySegment statBuffer = arena.allocate(STAT_LAYOUT);
+			MemorySegment statBuffer = arena.allocate(STAT_SIZE, Long.BYTES);
 			if (stat(capturedErrno, nativePath, statBuffer) != 0) {
 				throw error("stat", path, getErrno(capturedErrno)); //$NON-NLS-1$
 			}
-			return (int) ST_FLAGS.get(statBuffer, 0L);
+			return statBuffer.get(ValueLayout.JAVA_INT, ST_FLAGS_OFFSET);
 		}
 	}
 

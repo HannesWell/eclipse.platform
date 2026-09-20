@@ -51,6 +51,7 @@ public class MacOSHandler extends NativeHandler {
 		}
 		Path path = Path.of(fileName);
 		try {
+			FileInfo currentInfo = posixHandler.fetchFileInfo(fileName);
 			int currentFlags = MacFileFlags.read(path);
 			boolean immutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
 			if (!immutable && MacFileFlags.isImmutable(currentFlags) && info.getAttribute(EFS.ATTRIBUTE_READ_ONLY)) {
@@ -74,6 +75,7 @@ public class MacOSHandler extends NativeHandler {
 				try {
 					MacFileFlags.write(path, desiredFlags);
 				} catch (IOException e) {
+					posixHandler.putFileInfo(fileName, currentInfo, options);
 					if (writableFlags != currentFlags) {
 						try {
 							MacFileFlags.write(path, currentFlags);
