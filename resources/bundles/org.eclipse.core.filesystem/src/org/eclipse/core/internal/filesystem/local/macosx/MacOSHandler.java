@@ -66,9 +66,6 @@ public class MacOSHandler extends NativeHandler {
 				immutable = requestedReadOnly;
 			}
 			int desiredFlags = MacFileFlags.withUserImmutable(currentFlags, immutable);
-			if (readOnlyChanged && !immutable && MacFileFlags.isImmutable(desiredFlags)) {
-				return false;
-			}
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
 			if (MacFileFlags.hasUserImmutable(currentFlags)) {
 				MacFileFlags.write(path, writableFlags);

@@ -63,7 +63,6 @@ public class LocalFileNativesManager {
 			Set<String> views = FileSystems.getDefault().supportedFileAttributeViews();
 			if (useNatives && Platform.OS.isMac() && views.contains("posix") && MacOSHandler.isSupported()) { //$NON-NLS-1$
 				HANDLER = new MacOSHandler();
-				nativesAreUsed = true;
 			} else if (views.contains("posix")) { //$NON-NLS-1$
 				HANDLER = new PosixHandler();
 			} else if (views.contains("dos")) { //$NON-NLS-1$
