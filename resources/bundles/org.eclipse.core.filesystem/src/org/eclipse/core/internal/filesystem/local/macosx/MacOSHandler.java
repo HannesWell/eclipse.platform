@@ -111,14 +111,14 @@ public class MacOSHandler extends NativeHandler {
 				failure.addSuppressed(suppressed);
 			}
 		}
+	}
 
-		private static boolean hasPosixPermissionChanges(IFileInfo currentInfo, IFileInfo requestedInfo) {
-			for (int attribute : POSIX_PERMISSION_ATTRIBUTES) {
-				if (currentInfo.getAttribute(attribute) != requestedInfo.getAttribute(attribute)) {
-					return true;
-				}
+	private static boolean hasPosixPermissionChanges(IFileInfo currentInfo, IFileInfo requestedInfo) {
+		for (int attribute : POSIX_PERMISSION_ATTRIBUTES) {
+			if (currentInfo.getAttribute(attribute) != requestedInfo.getAttribute(attribute)) {
+				return true;
 			}
-			return false;
 		}
+		return false;
 	}
 }
