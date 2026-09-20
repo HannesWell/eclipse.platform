@@ -134,7 +134,7 @@ public class PosixHandler extends NativeHandler {
 			if (CHFLAGS_SUPPORTED) {
 				currentFlags = MacFileFlags.read(path);
 				writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
-				desiredImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
+				desiredImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE) || info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 				if (MacFileFlags.hasUserImmutable(currentFlags)) {
 					MacFileFlags.write(path, writableFlags);
 				}
