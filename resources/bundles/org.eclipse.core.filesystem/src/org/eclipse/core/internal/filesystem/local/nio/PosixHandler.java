@@ -24,17 +24,20 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.provider.FileInfo;
 import org.eclipse.core.internal.filesystem.local.NativeHandler;
+import org.eclipse.core.internal.filesystem.local.macosx.MacFileFlags;
 
 /**
  * NativeHandler for POSIX using only Java 7 API's. It can be used for any
  * file system supporting POSIX family of standards.
  */
 public class PosixHandler extends NativeHandler {
+	private static final boolean CHFLAGS_SUPPORTED = MacFileFlags.CHFLAGS_SUPPORTED;
 	private static final int ATTRIBUTES = EFS.ATTRIBUTE_SYMLINK | EFS.ATTRIBUTE_LINK_TARGET // symbolic link support
 			| EFS.ATTRIBUTE_READ_ONLY | EFS.ATTRIBUTE_EXECUTABLE // mapped to owner read and owner execute via FileInfo implementation
 			| EFS.ATTRIBUTE_OWNER_READ | EFS.ATTRIBUTE_OWNER_WRITE | EFS.ATTRIBUTE_OWNER_EXECUTE // owner
 			| EFS.ATTRIBUTE_GROUP_READ | EFS.ATTRIBUTE_GROUP_WRITE | EFS.ATTRIBUTE_GROUP_EXECUTE // group
-			| EFS.ATTRIBUTE_OTHER_READ | EFS.ATTRIBUTE_OTHER_WRITE | EFS.ATTRIBUTE_OTHER_EXECUTE; // other
+			| EFS.ATTRIBUTE_OTHER_READ | EFS.ATTRIBUTE_OTHER_WRITE | EFS.ATTRIBUTE_OTHER_EXECUTE // other
+			| (CHFLAGS_SUPPORTED ? EFS.ATTRIBUTE_IMMUTABLE : EFS.NONE);
 
 	@Override
 	public FileInfo fetchFileInfo(String fileName) {
@@ -73,6 +76,9 @@ public class PosixHandler extends NativeHandler {
 			info.setAttribute(EFS.ATTRIBUTE_OTHER_READ, perms.contains(PosixFilePermission.OTHERS_READ));
 			info.setAttribute(EFS.ATTRIBUTE_OTHER_WRITE, perms.contains(PosixFilePermission.OTHERS_WRITE));
 			info.setAttribute(EFS.ATTRIBUTE_OTHER_EXECUTE, perms.contains(PosixFilePermission.OTHERS_EXECUTE));
+			if (CHFLAGS_SUPPORTED) {
+				info.setAttribute(EFS.ATTRIBUTE_IMMUTABLE, MacFileFlags.isImmutable(MacFileFlags.read(path)));
+			}
 		} catch (NoSuchFileException e) {
 			// A non-existing file is not considered an error.
 		} catch (IOException e) {
@@ -91,6 +97,9 @@ public class PosixHandler extends NativeHandler {
 	public boolean putFileInfo(String fileName, IFileInfo info, int options) {
 		Path path = Paths.get(fileName);
 		Set<PosixFilePermission> perms = new HashSet<>();
+		int currentFlags = 0;
+		int writableFlags = 0;
+		boolean desiredImmutable = false;
 
 		if (info.getAttribute(EFS.ATTRIBUTE_OWNER_READ)) {
 			perms.add(PosixFilePermission.OWNER_READ);
@@ -122,8 +131,30 @@ public class PosixHandler extends NativeHandler {
 
 		PosixFileAttributeView view = Files.getFileAttributeView(path, PosixFileAttributeView.class);
 		try {
+			if (CHFLAGS_SUPPORTED) {
+				currentFlags = MacFileFlags.read(path);
+				writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
+				desiredImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
+				if (MacFileFlags.hasUserImmutable(currentFlags)) {
+					MacFileFlags.write(path, writableFlags);
+				}
+			}
 			view.setPermissions(perms);
+			if (CHFLAGS_SUPPORTED) {
+				int updatedFlags = MacFileFlags.read(path);
+				int desiredFlags = MacFileFlags.withUserImmutable(updatedFlags, desiredImmutable);
+				if (desiredFlags != updatedFlags) {
+					MacFileFlags.write(path, desiredFlags);
+				}
+			}
 		} catch (IOException e) {
+			if (CHFLAGS_SUPPORTED && writableFlags != currentFlags) {
+				try {
+					MacFileFlags.write(path, currentFlags);
+				} catch (IOException suppressed) {
+					e.addSuppressed(suppressed);
+				}
+			}
 			return false;
 		}
 		return true;
