@@ -71,7 +71,7 @@ public class MacOSHandler extends NativeHandler {
 			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
 			boolean posixPermissionsChanged = hasPosixPermissionChanges(currentInfo, info);
 			if (immutableChanged) {
-				if (!info.exists() && currentImmutable && posixPermissionsChanged && !readOnlyChanged) {
+				if (currentInfo.exists() && currentImmutable && posixPermissionsChanged && !readOnlyChanged) {
 					immutable = currentImmutable;
 				} else {
 					immutable = requestedImmutable;
