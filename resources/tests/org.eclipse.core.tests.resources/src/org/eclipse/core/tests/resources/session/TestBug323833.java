@@ -88,6 +88,9 @@ public class TestBug323833 {
 		IFileInfo info = fileStore.fetchInfo();
 		info.setAttribute(EFS.ATTRIBUTE_READ_ONLY, true);
 		fileStore.putInfo(info, EFS.SET_ATTRIBUTES, createTestMonitor());
+		IFileInfo updatedInfo = fileStore.fetchInfo();
+		assertTrue(updatedInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY));
+		assertTrue(updatedInfo.getAttribute(EFS.ATTRIBUTE_IMMUTABLE));
 
 		// create a cached file
 		File cachedFile = fileStore.toLocalFile(EFS.CACHE, createTestMonitor());

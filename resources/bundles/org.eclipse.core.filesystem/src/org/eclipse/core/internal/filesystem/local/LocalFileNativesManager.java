@@ -20,6 +20,7 @@ import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.provider.FileInfo;
 import org.eclipse.core.internal.filesystem.local.linux.LinuxFileHandler;
 import org.eclipse.core.internal.filesystem.local.linux.LinuxFileNatives;
+import org.eclipse.core.internal.filesystem.local.macosx.MacOSHandler;
 import org.eclipse.core.internal.filesystem.local.nio.DefaultHandler;
 import org.eclipse.core.internal.filesystem.local.nio.PosixHandler;
 import org.eclipse.core.runtime.Platform;
@@ -60,7 +61,10 @@ public class LocalFileNativesManager {
 		} else {
 			nativesAreUsed = false;
 			Set<String> views = FileSystems.getDefault().supportedFileAttributeViews();
-			if (views.contains("posix")) { //$NON-NLS-1$
+			if (useNatives && Platform.OS.isMac() && views.contains("posix") && MacOSHandler.isSupported()) { //$NON-NLS-1$
+				HANDLER = new MacOSHandler();
+				nativesAreUsed = true;
+			} else if (views.contains("posix")) { //$NON-NLS-1$
 				HANDLER = new PosixHandler();
 			} else if (views.contains("dos")) { //$NON-NLS-1$
 				HANDLER = new Win32Handler();
