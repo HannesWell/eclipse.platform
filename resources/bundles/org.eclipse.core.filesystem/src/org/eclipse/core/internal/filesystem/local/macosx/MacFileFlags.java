@@ -32,6 +32,7 @@ final class MacFileFlags {
 	private static final int IMMUTABLE_FLAGS = UF_IMMUTABLE | SF_IMMUTABLE;
 	private static final int ENOENT = 2;
 	private static final int ENOTDIR = 20;
+	private static final long UINT_MASK = 0xffff_ffffL;
 
 	private static final boolean SUPPORTED_ARCH = Platform.ARCH_X86_64.equals(Platform.getOSArch())
 			|| Platform.ARCH_AARCH64.equals(Platform.getOSArch());
@@ -74,7 +75,7 @@ final class MacFileFlags {
 	private static final MethodHandle STAT_HANDLE = downcall("stat", //$NON-NLS-1$
 			FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	private static final MethodHandle CHFLAGS_HANDLE = downcall("chflags", //$NON-NLS-1$
-			FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+			FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT.withName("u_int"))); //$NON-NLS-1$
 
 	private MacFileFlags() {
 	}
@@ -111,7 +112,7 @@ final class MacFileFlags {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment capturedErrno = arena.allocate(ERRNO_CAPTURE_LAYOUT);
 			MemorySegment nativePath = allocatePath(path, arena);
-			if (chflags(capturedErrno, nativePath, flags) != 0) {
+			if (chflags(capturedErrno, nativePath, Integer.toUnsignedLong(flags)) != 0) {
 				throw error("chflags", path, getErrno(capturedErrno)); //$NON-NLS-1$
 			}
 		}
@@ -133,9 +134,9 @@ final class MacFileFlags {
 		}
 	}
 
-	private static int chflags(MemorySegment capturedErrno, MemorySegment nativePath, int flags) {
+	private static int chflags(MemorySegment capturedErrno, MemorySegment nativePath, long flags) {
 		try {
-			return (int) CHFLAGS_HANDLE.invokeExact(capturedErrno, nativePath, flags);
+			return (int) CHFLAGS_HANDLE.invokeExact(capturedErrno, nativePath, (int) (flags & UINT_MASK));
 		} catch (Error | RuntimeException e) {
 			throw e;
 		} catch (Throwable e) {
