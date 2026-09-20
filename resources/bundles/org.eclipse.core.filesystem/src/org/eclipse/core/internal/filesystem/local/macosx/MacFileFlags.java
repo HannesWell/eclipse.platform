@@ -73,7 +73,7 @@ final class MacFileFlags {
 	private static final StructLayout ERRNO_CAPTURE_LAYOUT = Linker.Option.captureStateLayout();
 	private static final VarHandle ERRNO = ERRNO_CAPTURE_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("errno")); //$NON-NLS-1$
 
-	private static final MethodHandle STAT_HANDLE = downcall("stat", //$NON-NLS-1$
+	private static final MethodHandle LSTAT_HANDLE = downcall("lstat", //$NON-NLS-1$
 			FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 	private static final MethodHandle CHFLAGS_HANDLE = downcall("chflags", //$NON-NLS-1$
 			FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT.withName("u_int"))); //$NON-NLS-1$
@@ -82,7 +82,7 @@ final class MacFileFlags {
 	}
 
 	static boolean isSupported() {
-		return SUPPORTED_ARCH && STAT_HANDLE != null && CHFLAGS_HANDLE != null;
+		return SUPPORTED_ARCH && LSTAT_HANDLE != null && CHFLAGS_HANDLE != null;
 	}
 
 	static boolean isImmutable(int flags) {
@@ -102,8 +102,8 @@ final class MacFileFlags {
 			MemorySegment capturedErrno = arena.allocate(ERRNO_CAPTURE_LAYOUT);
 			MemorySegment nativePath = allocatePath(path, arena);
 			MemorySegment statBuffer = arena.allocate(STAT_SIZE, Long.BYTES);
-			if (stat(capturedErrno, nativePath, statBuffer) != 0) {
-				throw error("stat", path, getErrno(capturedErrno)); //$NON-NLS-1$
+			if (lstat(capturedErrno, nativePath, statBuffer) != 0) {
+				throw error("lstat", path, getErrno(capturedErrno)); //$NON-NLS-1$
 			}
 			return statBuffer.get(ValueLayout.JAVA_INT, ST_FLAGS_OFFSET);
 		}
@@ -125,9 +125,9 @@ final class MacFileFlags {
 				.orElse(null);
 	}
 
-	private static int stat(MemorySegment capturedErrno, MemorySegment nativePath, MemorySegment statBuffer) {
+	private static int lstat(MemorySegment capturedErrno, MemorySegment nativePath, MemorySegment statBuffer) {
 		try {
-			return (int) STAT_HANDLE.invokeExact(capturedErrno, nativePath, statBuffer);
+			return (int) LSTAT_HANDLE.invokeExact(capturedErrno, nativePath, statBuffer);
 		} catch (Error | RuntimeException e) {
 			throw e;
 		} catch (Throwable e) {
