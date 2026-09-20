@@ -67,17 +67,15 @@ public class MacOSHandler extends NativeHandler {
 			boolean currentReadOnly = currentInfo.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedReadOnly = info.getAttribute(EFS.ATTRIBUTE_READ_ONLY);
 			boolean requestedImmutable = info.getAttribute(EFS.ATTRIBUTE_IMMUTABLE);
-			boolean immutableChanged = requestedImmutable != currentImmutable;
 			boolean readOnlyChanged = requestedReadOnly != currentReadOnly;
 			boolean posixPermissionsChanged = hasPosixPermissionChanges(currentInfo, info);
-			if (immutableChanged) {
-				if (currentInfo.exists() && currentImmutable && posixPermissionsChanged && !readOnlyChanged) {
-					immutable = currentImmutable;
-				} else {
-					immutable = requestedImmutable;
-				}
-			} else if (readOnlyChanged) {
+			if (currentImmutable && !MacFileFlags.hasUserImmutable(currentFlags) && (readOnlyChanged || posixPermissionsChanged)) {
+				return false;
+			}
+			if (readOnlyChanged) {
 				immutable = requestedReadOnly;
+			} else if (!posixPermissionsChanged && requestedImmutable != currentImmutable) {
+				immutable = requestedImmutable;
 			}
 			int writableFlags = MacFileFlags.withUserImmutable(currentFlags, false);
 			if (MacFileFlags.hasUserImmutable(currentFlags)) {
