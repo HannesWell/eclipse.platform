@@ -75,9 +75,8 @@ public class MacOSHandler extends NativeHandler {
 				MacFileFlags.write(path, writableFlags);
 			}
 			if (!posixHandler.putFileInfo(fileName, info, options)) {
-				if (writableFlags != currentFlags) {
-					MacFileFlags.write(path, currentFlags);
-				}
+				rollback(path, fileName, currentInfo, options, currentFlags, writableFlags,
+						new IOException("Failed to update POSIX attributes")); //$NON-NLS-1$
 				return false;
 			}
 			int updatedFlags = MacFileFlags.read(path);
